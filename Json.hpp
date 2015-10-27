@@ -379,9 +379,14 @@ namespace Json
         {
             return _items[key];
         }
+
+		Value & operator&()
+		{
+			return *this;
+		}
         
 		template <class T>
-		typename T::Ptr get(const String &key) const
+		typename const T::Ptr get(const String &key) const
         {
             auto itr = _items.find(key);
             if (itr != _items.end())
@@ -391,6 +396,18 @@ namespace Json
             
             return nullptr;
         }
+
+		template <class T>
+		typename T::Ptr get(const String &key)
+		{
+			auto itr = _items.find(key);
+			if (itr != _items.end())
+			{
+				return Json::ConvertJson<T>(itr->second);
+			}
+
+			return nullptr;
+		}
         
         size_t count() const { return _items.size(); }
         
@@ -432,11 +449,16 @@ namespace Json
             
         }
         
-        Value::Ptr &operator[](size_t index)
+        const Value::Ptr &operator[](size_t index) const
         {
             return _items[index];
         }
         
+		Value::Ptr &operator[](size_t index)
+		{
+			return _items[index];
+		}
+
         void push_back(Value::Ptr const &value)
         {
             _items.push_back(value);
