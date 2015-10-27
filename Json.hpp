@@ -62,8 +62,8 @@ namespace Json
         ParsingContext(string const &content)
         :_content(content)
         ,_pos(0)
-		,_row(0)
-		,_column(0)
+        ,_row(0)
+        ,_column(0)
         {
             
         }
@@ -74,35 +74,35 @@ namespace Json
             if (_pos < _content.length() - 1)
             {
                 _pos += movement;
-				_column += movement;
+                _column += movement;
                 return true;
             }
             return false;
         }
         
         size_t getPos() const { return _pos; }
-		
-		void nextRow()
-		{
-			++_row;
-			_column = 0;
-		}
-
-		size_t row() const
-		{
-			return _row;
-		}
-
-		size_t column() const
-		{
-			return _column;
-		}
+        
+        void nextRow()
+        {
+            ++_row;
+            _column = 0;
+        }
+        
+        size_t row() const
+        {
+            return _row;
+        }
+        
+        size_t column() const
+        {
+            return _column;
+        }
         
     private:
         string _content;
         size_t _pos;
-		size_t _row;
-		size_t _column;
+        size_t _row;
+        size_t _column;
     };
     
     class Lexer
@@ -195,8 +195,8 @@ namespace Json
                 char ch = _parsingContext->peek();
                 if (ch != pattern[chIndex++])
                 {
-					throw ParserException(string("error around charactor :") + ch + string{ " at pos (" } \
-						+ to_string(_parsingContext->row()) + "," + to_string(_parsingContext->column()) + "), maybe it's " + expect + "?");
+                    throw ParserException(string("error around charactor :") + ch + string{ " at pos (" } \
+                                          + to_string(_parsingContext->row()) + "," + to_string(_parsingContext->column()) + "), maybe it's " + expect + "?");
                 }
             } while (_parsingContext->next() && chIndex < expect.length());
             
@@ -237,10 +237,10 @@ namespace Json
             
             if (isspace(ch))
             {
-				if (ch == '\n')
-				{
-					_parsingContext->nextRow();
-				}
+                if (ch == '\n')
+                {
+                    _parsingContext->nextRow();
+                }
                 continue;
             }
             
@@ -285,8 +285,8 @@ namespace Json
                     }
                     else
                     {
-						throw ParserException(string("error around charactor :") + ch + string{ " at pos (" } \
-							+ to_string(_parsingContext->row()) + "," + to_string(_parsingContext->column()) + ")"); 
+                        throw ParserException(string("error around charactor :") + ch + string{ " at pos (" } \
+                                              + to_string(_parsingContext->row()) + "," + to_string(_parsingContext->column()) + ")");
                     }
                     break;
             }
@@ -341,13 +341,13 @@ namespace Json
         {
             
         }
-
-		String(const char *chr)
-			:Value(VALUE_TYPE::JSON_STRING)
-			, _value(chr)
-		{
-
-		}
+        
+        String(const char *chr)
+        :Value(VALUE_TYPE::JSON_STRING)
+        , _value(chr)
+        {
+            
+        }
         
         string toSTDString() const { return _value; }
         
@@ -379,14 +379,14 @@ namespace Json
         {
             return _items[key];
         }
-
-		Value & operator&()
-		{
-			return *this;
-		}
         
-		template <class T>
-		typename const T::Ptr get(const String &key) const
+        Value & operator&()
+        {
+            return *this;
+        }
+        
+        template <class T>
+        typename const T::Ptr get(const String &key) const
         {
             auto itr = _items.find(key);
             if (itr != _items.end())
@@ -396,18 +396,18 @@ namespace Json
             
             return nullptr;
         }
-
-		template <class T>
-		typename T::Ptr get(const String &key)
-		{
-			auto itr = _items.find(key);
-			if (itr != _items.end())
-			{
-				return Json::ConvertJson<T>(itr->second);
-			}
-
-			return nullptr;
-		}
+        
+        template <class T>
+        typename T::Ptr get(const String &key)
+        {
+            auto itr = _items.find(key);
+            if (itr != _items.end())
+            {
+                return Json::ConvertJson<T>(itr->second);
+            }
+            
+            return nullptr;
+        }
         
         size_t count() const { return _items.size(); }
         
@@ -454,11 +454,11 @@ namespace Json
             return _items[index];
         }
         
-		Value::Ptr &operator[](size_t index)
-		{
-			return _items[index];
-		}
-
+        Value::Ptr &operator[](size_t index)
+        {
+            return _items[index];
+        }
+        
         void push_back(Value::Ptr const &value)
         {
             _items.push_back(value);
@@ -556,22 +556,22 @@ namespace Json
         }
         
     };
-
-	template<class T, class... _Types> inline
-		shared_ptr<T> CreateJson(_Types&&... _Args)
-	{	// make a shared_ptr
-		auto ptr = make_shared<T>(forward<_Types>(_Args)...);
-		return ptr;
-	}
-
-
-	// convert json value from one type to another
-	template<class T1, class T2>
-		shared_ptr<T1>
-	ConvertJson(const shared_ptr<T2>& objPtr)
-	{	
-		return static_pointer_cast<T1, T2>(objPtr);
-	}
+    
+    template<class T, class... _Types> inline
+    shared_ptr<T> CreateJson(_Types&&... _Args)
+    {	// make a shared_ptr
+        auto ptr = make_shared<T>(forward<_Types>(_Args)...);
+        return ptr;
+    }
+    
+    
+    // convert json value from one type to another
+    template<class T1, class T2>
+    shared_ptr<T1>
+    ConvertJson(const shared_ptr<T2>& objPtr)
+    {
+        return static_pointer_cast<T1, T2>(objPtr);
+    }
     
     class FileReader
     {
