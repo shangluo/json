@@ -332,8 +332,8 @@ namespace Json
     class String : public Value
     {
     public:
-        typedef shared_ptr<Value> Ptr;
-        typedef list<Value> List;
+        typedef shared_ptr<String> Ptr;
+        typedef list<String> List;
         
         String(string const &value)
         :Value(VALUE_TYPE::JSON_STRING)
@@ -341,6 +341,13 @@ namespace Json
         {
             
         }
+
+		String(const char *chr)
+			:Value(VALUE_TYPE::JSON_STRING)
+			, _value(chr)
+		{
+
+		}
         
         string toSTDString() const { return _value; }
         
@@ -373,12 +380,13 @@ namespace Json
             return _items[key];
         }
         
-        Value::Ptr get(const String &key) const
+		template <class T>
+		typename T::Ptr get(const String &key) const
         {
             auto itr = _items.find(key);
             if (itr != _items.end())
             {
-                return itr->second;
+                return Json::ConvertJson<T>(itr->second);
             }
             
             return nullptr;
@@ -534,6 +542,14 @@ namespace Json
 		return ptr;
 	}
 
+
+	// convert json value from one type to another
+	template<class T1, class T2>
+		shared_ptr<T1>
+	ConvertJson(const shared_ptr<T2>& objPtr)
+	{	
+		return static_pointer_cast<T1, T2>(objPtr);
+	}
     
     class FileReader
     {
