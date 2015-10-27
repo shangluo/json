@@ -10,22 +10,28 @@ Simple Json file parser/writer writing in C++ for fun, just drop Json.hpp to you
 int main()
 {
 	auto obj = Json::CreateJson<Json::Object>();
-	(*obj)["String"] = Json::CreateJson<Json::String>("Json String");
-	(*obj)["Number"] = Json::CreateJson<Json::Number>(1234);
-	(*obj)["Null"] = Json::CreateJson<Json::Null>();
-	(*obj)["Obj"] = Json::CreateJson<Json::Object>();
-	auto array = (*obj)["Array"] = Json::CreateJson<Json::Array>();
 
-	// fill array
-	auto arrayPtr = Json::ConvertJson<Json::Array>(array);
-	for (auto i = 0; i < 10; ++i)
+	if (obj)
 	{
-		arrayPtr->push_back(Json::CreateJson<Json::Number>(i));
+		auto &object = *obj;
+		object["String"] = Json::CreateJson<Json::String>("Json String");
+		object["Number"] = Json::CreateJson<Json::Number>(1234);
+		object["Null"] = Json::CreateJson<Json::Null>();
+		object["Obj"] = Json::CreateJson<Json::Object>();
+		auto array = object["Array"] = Json::CreateJson<Json::Array>();
+		
+		// fill array
+		auto arrayPtr = Json::ConvertJson<Json::Array>(array);
+		for (auto i = 0; i < 10; ++i)
+		{
+			arrayPtr->push_back(Json::CreateJson<Json::Number>(i));
+		}
+
+		// write to file
+		Json::FileWriter writer;
+		writer.write("test.json", obj);
 	}
 
-	// write to file
-	Json::FileWriter writer;
-	writer.write("test.json", obj);
 
 	try
 	{
@@ -39,9 +45,13 @@ int main()
 		auto number = obj->get<Json::Number>("Number")->toLongLong();
 		auto arrayPtr = obj->get<Json::Array>("Array");
 		
-		for (auto i = 0U; i < arrayPtr->count(); ++i)
+		if (arrayPtr)
 		{
-			auto item = Json::ConvertJson<Json::Number>((*arrayPtr)[i])->toLongLong();
+			auto const &array = *arrayPtr;
+			for (auto i = 0U; i < array.count(); ++i)
+			{
+				auto item = Json::ConvertJson<Json::Number>(array[i])->toLongLong();
+			}
 		}
 	}
 	catch (Json::ParserException const &e)
