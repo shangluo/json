@@ -10,11 +10,11 @@ Simple Json file parser/writer writing in C++ for fun, just drop Json.hpp to you
 int main()
 {
 	auto obj = Json::CreateJson<Json::Object>();
-	(*obj)[Json::String("String")] = Json::CreateJson<Json::String>("Json String");
-	(*obj)[Json::String("Number")] = Json::CreateJson<Json::Number>(1234);
-	(*obj)[Json::String("Null")] = Json::CreateJson<Json::Null>();
-	(*obj)[Json::String("Obj")] = Json::CreateJson<Json::Object>();
-	auto array = (*obj)[Json::String("Array")] = Json::CreateJson<Json::Array>();
+	(*obj)["String"] = Json::CreateJson<Json::String>("Json String");
+	(*obj)["Number"] = Json::CreateJson<Json::Number>(1234);
+	(*obj)["Null"] = Json::CreateJson<Json::Null>();
+	(*obj)["Obj"] = Json::CreateJson<Json::Object>();
+	auto array = (*obj)["Array"] = Json::CreateJson<Json::Array>();
 
 	// fill array
 	auto arrayPtr = Json::ConvertJson<Json::Array>(array);
