@@ -48,7 +48,7 @@ namespace Json
             
         }
         
-        string getMessage()
+        string getMessage() const
         {
             return _message;
         }
@@ -61,7 +61,9 @@ namespace Json
     public:
         ParsingContext(string const &content)
         :_content(content)
-        , _pos(0)
+        ,_pos(0)
+		,_row(0)
+		,_column(0)
         {
             
         }
@@ -72,16 +74,35 @@ namespace Json
             if (_pos < _content.length() - 1)
             {
                 _pos += movement;
+				_column += movement;
                 return true;
             }
             return false;
         }
         
         size_t getPos() const { return _pos; }
+		
+		void nextRow()
+		{
+			++_row;
+			_column = 0;
+		}
+
+		size_t row() const
+		{
+			return _row;
+		}
+
+		size_t column() const
+		{
+			return _column;
+		}
         
     private:
         string _content;
         size_t _pos;
+		size_t _row;
+		size_t _column;
     };
     
     class Lexer
@@ -174,7 +195,8 @@ namespace Json
                 char ch = _parsingContext->peek();
                 if (ch != pattern[chIndex++])
                 {
-                    throw ParserException(string("error around charactor :") + ch + string{ " at pos," } + to_string(_parsingContext->getPos()) + "maybe it's " + expect + "?");
+					throw ParserException(string("error around charactor :") + ch + string{ " at pos (" } \
+						+ to_string(_parsingContext->row()) + "," + to_string(_parsingContext->column()) + "), maybe it's " + expect + "?");
                 }
             } while (_parsingContext->next() && chIndex < expect.length());
             
@@ -215,6 +237,10 @@ namespace Json
             
             if (isspace(ch))
             {
+				if (ch == '\n')
+				{
+					_parsingContext->nextRow();
+				}
                 continue;
             }
             
@@ -259,7 +285,8 @@ namespace Json
                     }
                     else
                     {
-                        throw ParserException(string("error around charactor :") + ch + string{ " at pos " } + to_string(_parsingContext->getPos()));
+						throw ParserException(string("error around charactor :") + ch + string{ " at pos (" } \
+							+ to_string(_parsingContext->row()) + "," + to_string(_parsingContext->column()) + ")"); 
                     }
                     break;
             }
@@ -499,6 +526,14 @@ namespace Json
         }
         
     };
+
+	template<class T, class... _Types> inline
+		shared_ptr<T> CreateJson(_Types&&... _Args)
+	{	// make a shared_ptr
+		auto ptr = make_shared<T>(forward<_Types>(_Args)...);
+		return ptr;
+	}
+
     
     class FileReader
     {
