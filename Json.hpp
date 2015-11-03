@@ -487,18 +487,18 @@ namespace Json
             return _value < rhs._value;
         }
 
-		bool operator ==(String const &rhs) const
-		{
-			return _value == rhs._value;
-		}
+	bool operator ==(String const &rhs) const
+	{
+		return _value == rhs._value;
+	}
 
-		struct hashFuc
+	struct hashFuc
+	{
+		size_t operator()(String const &rhs) const
 		{
-			size_t operator()(String const &rhs) const
-			{
-				return hash<string>()(rhs._value);
-			}
-		};
+			return hash<string>()(rhs._value);
+		}
+	};
 
     private:
         string _value;
