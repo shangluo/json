@@ -9,6 +9,12 @@
 #include <map>
 #include <vector>
 #include <utility>
+#include <locale>
+#include <codecvt>
+#include <algorithm>
+#include <numeric>
+#include <sstream>
+#include <iomanip>
 
 namespace Json
 {
@@ -87,12 +93,12 @@ namespace Json
             ++_row;
             _column = 0;
         }
-        
+
         size_t row() const
         {
             return _row;
         }
-        
+
         size_t column() const
         {
             return _column;
@@ -172,7 +178,58 @@ namespace Json
             while (_parsingContext->next())
             {
                 char ch = _parsingContext->peek();
-                if (ch == '\"')
+                if (ch == '\\')
+                {
+                    if (_parsingContext->next())
+                    {
+                        char type = _parsingContext->peek();
+                        if (type ==  'u')
+                        {
+                            // read four more
+                            string strUnicode;
+                            int chrIndex = 0;
+                            while (chrIndex++ < 4 && _parsingContext->next())
+                            {
+                                strUnicode += _parsingContext->peek();
+                            }
+
+                            wchar_t wchr = 0;
+                            wchr = stoi(strUnicode, 0, 16);
+                            std::wstring_convert<std::codecvt_utf8<wchar_t>> conv1;
+                            str += conv1.to_bytes(wchr);
+                        }
+                        else
+                        {
+                            switch (type)
+                            {
+                            case '\"':
+                            case '\\':
+                            case '/':
+                                break;
+                            case 'b':
+                                type = '\b';
+                                break;
+                            case 'f':
+                                type = '\f';
+                                break;
+                            case 'n':
+                                type = '\n';
+                                break;
+                            case 'r':
+                                type = '\r';
+                                break;
+                            case 't':
+                                type = '\t';
+                                break;
+                            default:
+                                break;
+                            }
+                            
+                            str += type;
+                        }
+                    }
+                }
+                else if (ch == '\"')
                 {
                     //_parsingContext->next();
                     break;
@@ -196,7 +253,7 @@ namespace Json
                 if (ch != pattern[chIndex++])
                 {
                     throw ParserException(string("error around charactor :") + ch + string{ " at pos (" } \
-                                          + to_string(_parsingContext->row()) + "," + to_string(_parsingContext->column()) + "), maybe it's " + expect + "?");
+                        + to_string(_parsingContext->row()) + "," + to_string(_parsingContext->column()) + "), maybe it's " + expect + "?");
                 }
             } while (_parsingContext->next() && chIndex < expect.length());
             
@@ -227,7 +284,14 @@ namespace Json
             
             _parsingContext->next(-1);
             
-            return stod(str);
+            try
+            {
+                return stod(str);
+            }
+            catch (invalid_argument const &i)
+            {
+                throw ParserException(string{"error at pos (" } + to_string(_parsingContext->row()) + "," + to_string(_parsingContext->column()) + "), " + i.what());
+            }
         };
         
         do
@@ -286,7 +350,7 @@ namespace Json
                     else
                     {
                         throw ParserException(string("error around charactor :") + ch + string{ " at pos (" } \
-                                              + to_string(_parsingContext->row()) + "," + to_string(_parsingContext->column()) + ")");
+                            + to_string(_parsingContext->row()) + "," + to_string(_parsingContext->column()) + ")"); 
                     }
                     break;
             }
@@ -341,17 +405,81 @@ namespace Json
         {
             
         }
-        
+
         String(const char *chr)
-        :Value(VALUE_TYPE::JSON_STRING)
-        , _value(chr)
+            :Value(VALUE_TYPE::JSON_STRING)
+            , _value(chr)
         {
-            
+
         }
         
-        string toSTDString() const { return _value; }
-        
-        virtual string toString() const override { return '\"' + _value + '\"'; }
+        string toSTDString() const { return _value; } // get utf8 string
+        wstring toSTDWString() const // get unicode string
+        { 
+            wstring_convert<codecvt_utf8<wchar_t>> cvt;
+            return cvt.from_bytes(_value);
+        } 
+
+        virtual string toString() const override 
+        {
+            auto escapeString = [this](const wstring &str) -> string
+            {
+                return accumulate(begin(str), end(str), string{}, [](string const &str, wchar_t ch) -> string
+                {
+                    if (iswascii(ch)) // don't encode ascii, reduce size
+                    {
+                        string strChr;
+
+                        switch (ch)
+                        {
+                        case '\"':
+                        case '\\':
+                        case '/':
+                            break;
+                        case '\b':
+                            strChr = "\b";
+                            break;
+                        case '\f':
+                            strChr = "\f";
+                            break;
+                        case '\n':
+                            strChr = "\f";
+                            break;
+                        case '\r':
+                            strChr = "\r";
+                            break;
+                        case '\t':
+                            strChr = "\t";
+                            break;
+                        default:
+                            strChr = static_cast<char>(ch);
+                            break;
+                        }
+
+                        return str + strChr;
+                    }
+                    
+                    stringstream stream;
+                    stream << setfill('0') << setw(4) << hex << (int)ch;
+                    string result(stream.str());
+
+                    return str + "\\u" + result;
+                });
+            };
+
+            string rawStr = _value;
+            try
+            {
+                auto wstr = toSTDWString();
+                rawStr = escapeString(wstr);
+            }
+            catch (...)
+            {
+                // convert failed, maybe using native codec?
+            }
+
+            return '\"' + rawStr + '\"';
+        }
         
         bool operator <(String const &rhs) const
         {
@@ -380,11 +508,6 @@ namespace Json
             return _items[key];
         }
         
-        Value & operator&()
-        {
-            return *this;
-        }
-        
         template <class T>
         typename const T::Ptr get(const String &key) const
         {
@@ -396,7 +519,7 @@ namespace Json
             
             return nullptr;
         }
-        
+
         template <class T>
         typename T::Ptr get(const String &key)
         {
@@ -405,7 +528,7 @@ namespace Json
             {
                 return Json::ConvertJson<T>(itr->second);
             }
-            
+
             return nullptr;
         }
         
@@ -458,7 +581,7 @@ namespace Json
         {
             return _items[index];
         }
-        
+
         void push_back(Value::Ptr const &value)
         {
             _items.push_back(value);
@@ -556,20 +679,20 @@ namespace Json
         }
         
     };
-    
+
     template<class T, class... _Types> inline
-    shared_ptr<T> CreateJson(_Types&&... _Args)
+        shared_ptr<T> CreateJson(_Types&&... _Args)
     {	// make a shared_ptr
         auto ptr = make_shared<T>(forward<_Types>(_Args)...);
         return ptr;
     }
-    
-    
+
+
     // convert json value from one type to another
     template<class T1, class T2>
-    shared_ptr<T1>
+        shared_ptr<T1>
     ConvertJson(const shared_ptr<T2>& objPtr)
-    {
+    {	
         return static_pointer_cast<T1, T2>(objPtr);
     }
     
