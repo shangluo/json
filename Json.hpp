@@ -15,6 +15,7 @@
 #include <numeric>
 #include <sstream>
 #include <iomanip>
+#include <unordered_map>
 
 namespace Json
 {
@@ -485,7 +486,20 @@ namespace Json
         {
             return _value < rhs._value;
         }
-        
+
+		bool operator ==(String const &rhs) const
+		{
+			return _value == rhs._value;
+		}
+
+		struct hashFuc
+		{
+			size_t operator()(String const &rhs) const
+			{
+				return hash<string>()(rhs._value);
+			}
+		};
+
     private:
         string _value;
     };
@@ -495,7 +509,7 @@ namespace Json
     public:
         typedef shared_ptr<Object> Ptr;
         typedef list<Object> List;
-        typedef map<String, Value::Ptr> ValueDict;
+        typedef unordered_map<String, Value::Ptr, String::hashFuc> ValueDict;
         
         Object()
         :Value(VALUE_TYPE::JSON_OBJECT)
